@@ -1,28 +1,32 @@
 <script lang="ts">
 	import { persisted } from 'svelte-persisted-store'
 
-	const colors = [
-		"#000000", // unknown
-		"#CD6F7E", // salmon
-		"#A55EBB", // pink
-		"#69E3AB", // lime
-		"#0B25C3", // dark blue
-		"#3E511C", // olive
-		"#68A1DF", // light blue
-		"#707070", // gray
-		"#A6433F", // red
-		"#613289", // purple
-		"#CD8646", // orange
-		"#76A835", // green
-		"#FBE862", // yellow
+	const themes = [
+		[
+			"#000000", // unknown
+			"#CD6F7E", // salmon
+			"#A55EBB", // pink
+			"#69E3AB", // lime
+			"#0B25C3", // dark blue
+			"#3E511C", // olive
+			"#68A1DF", // light blue
+			"#707070", // gray
+			"#A6433F", // red
+			"#613289", // purple
+			"#CD8646", // orange
+			"#76A835", // green
+			"#FBE862", // yellow
+		]
 	]
 
+	let theme = persisted("theme", 0)
 	let columns = persisted("columns", 7)
 	let rows = persisted("rows", 2)
 	let height = persisted("height", 4)
 	let selectedColor = persisted("color", 0)
 	let map = persisted("map", new Array<number>())
 
+	$: colors = themes[$theme]
 	$: blockWidth = Math.floor(100 / $columns)
 	$: blockHeight = Math.floor(100 / ($height * $rows))
 	$: blockSize = Math.min(blockWidth, blockHeight)
@@ -51,22 +55,32 @@
 	}
 </script>
 
-<style>
+<style lang="postcss">
 	section {
 		container-type: size;
 	}
+
+	input, button, select, div {
+		@apply border-gray-500
+	}
 </style>
 
-<main class="flex flex-col items-center justify-evenly gap-10 bg-black p-5 h-svh  text-white border-slate-400">
+<main class="flex flex-col items-center justify-evenly gap-10 bg-black p-5 h-svh text-white">
 
 	<header class="flex gap-2">
-		<input class="bg-black border-2 px-1" type="number" bind:value={$columns} min="2" max="8"/>
-		x
-		<input class="bg-black border-2 px-1" type="number" bind:value={$rows} min="1" max="2"/>
-		x
-		<input class="bg-black border-2 px-1" type="number" bind:value={$height} min="4" max="10"/>
+		<select bind:value={$theme} class="bg-black border px-1">
+			{#each themes as theme, i}
+				<option value={i}>theme {i}</option>
+			{/each}
+		</select>
 
-		<button class="border-2 rounded-full cursor-pointer px-2 col-span-2" on:click={reset}>reset</button>
+		<input class="bg-black border px-1 w-10" type="number" bind:value={$columns} min="2" max="8"/>
+		x
+		<input class="bg-black border px-1 w-10" type="number" bind:value={$rows} min="1" max="2"/>
+		x
+		<input class="bg-black border px-1 w-10" type="number" bind:value={$height} min="4" max="10"/>
+
+		<button class="border cursor-pointer px-2 col-span-2" on:click={reset}>reset</button>
 	</header>
 
 	<section class="grid gap-3 place-content-center flex-grow w-full" style="grid-template-columns: repeat({$columns}, auto);">
@@ -74,12 +88,15 @@
 			<div class="flex flex-col">
 				{#each { length: $height } as _, y}
 					{@const index = i * 100 + y}
+					{@const color = $map[index] ?? 0}
+					{@const current = color === $selectedColor && $selectedColor != 0}
 					<button
 						class="grid place-content-center border-x first-of-type:border-t last-of-type:border-b last-of-type:rounded-b-full"
-						style="background-color: {colors[$map[index] ?? 0]}; width: {blockSize}cqmin; height: {blockSize}cqmin;"
+						style="background-color: {colors[color]}; width: {blockSize}cqmin; height: {blockSize}cqmin; z-index: {current ? 100 : 1};"
+						class:outline={current}
 						on:wheel|passive={e => scroll(index, e)}
 						on:click={() => click(index)}>
-						{format($map[index])}
+						{format(color)}
 					</button>
 				{/each}
 			</div>
